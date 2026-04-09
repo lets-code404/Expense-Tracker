@@ -29,6 +29,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         Import
       </button>
+      <button id="btn-goal" class="btn btn-glass" title="Set Monthly Goal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+        Set Goal
+      </button>
       <button id="btn-demo" class="btn btn-accent" title="Load demo data">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
         Load Demo
@@ -66,8 +70,38 @@
     </div>
   </div>
 
+  <!-- ─── GOAL MODAL ─── -->
+  <div id="goal-modal" class="modal-overlay hidden">
+    <div class="modal glass-card">
+      <div class="modal-header">
+        <h2>Set Monthly Goal</h2>
+        <button id="goal-modal-close" class="btn-icon">&times;</button>
+      </div>
+      <form id="goal-form" class="modal-body">
+        <p>Set a monthly expenditure limit to receive warnings when you approach or exceed it.</p>
+        <div style="margin-top: 16px;">
+          <label for="goal-input" style="font-size:0.85rem;color:var(--text-secondary);display:block;margin-bottom:6px;">Monthly Budget Limit (₹)</label>
+          <input type="number" id="goal-input" class="input-glass" placeholder="e.g. 10000" min="0" step="1" />
+          <small style="color:var(--text-muted);display:block;margin-top:8px;">Set to 0 to remove the goal.</small>
+        </div>
+        <div class="modal-footer" style="margin-top: 24px;">
+          <button type="submit" class="btn btn-accent">Save Goal</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- ─── MAIN DASHBOARD ─── -->
   <main id="dashboard">
+
+    <!-- GOAL ALERT -->
+    <div id="goal-alert" class="hidden" style="margin: 24px 28px 0; padding: 14px 18px; border-radius: var(--radius-sm); border: 1px solid var(--danger); background: rgba(239,68,68,.15); color: #f87171; display: flex; align-items: center; gap: 12px; animation: slideUp 0.3s ease;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:24px;height:24px;flex-shrink:0;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <div style="flex:1;">
+        <strong style="display:block;font-size:0.95rem;margin-bottom:2px;" id="goal-alert-title">Budget Warning</strong>
+        <span id="goal-alert-text" style="font-size:0.85rem;color:#fca5a5;">You have exceeded your monthly budget goal!</span>
+      </div>
+    </div>
 
     <!-- STATS ROW -->
     <section class="stats-row">
@@ -105,6 +139,18 @@
         <div class="stat-info">
           <span class="stat-label">Total Transactions</span>
           <span class="stat-value" id="val-total">0</span>
+        </div>
+      </div>
+      <div class="stat-card glass-card" id="stat-goal">
+        <div class="stat-icon goal-icon" style="background:rgba(244,114,182,0.15); color:#f472b6;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+        </div>
+        <div class="stat-info" style="flex:1;">
+          <span class="stat-label">Monthly Goal</span>
+          <span class="stat-value" id="val-goal">Not Set</span>
+          <div id="goal-progress-wrap" class="hidden" style="margin-top: 8px; background: rgba(255,255,255,0.1); height: 6px; border-radius: 3px; overflow: hidden;">
+            <div id="goal-progress-bar" style="width: 0%; height: 100%; background: var(--success); transition: width 0.3s, background 0.3s;"></div>
+          </div>
         </div>
       </div>
     </section>

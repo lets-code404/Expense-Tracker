@@ -8,6 +8,7 @@
 
   // ─── CONSTANTS ────────────────────────────────────────
   const STORAGE_KEY = 'expenseflow_data';
+  const GOAL_KEY    = 'expenseflow_goal';
   const CURRENCY    = '₹';
 
   // Color palette for charts
@@ -25,12 +26,26 @@
   const elValWeek   = $('#val-week');
   const elValMonth  = $('#val-month');
   const elValTotal  = $('#val-total');
+  const elValGoal   = $('#val-goal');
+  const elGoalWrap  = $('#goal-progress-wrap');
+  const elGoalBar   = $('#goal-progress-bar');
+  const elGoalAlert = $('#goal-alert');
+  const elGoalAlertTitle = $('#goal-alert-title');
+  const elGoalAlertText  = $('#goal-alert-text');
+
   const elTxnBody   = $('#txn-body');
   const elTxnEmpty  = $('#txn-empty');
   const elSearchTxn = $('#search-txn');
   const elChatMsgs  = $('#chat-messages');
   const elChatForm  = $('#chat-form');
   const elChatInput = $('#chat-input');
+
+  // Goal modal
+  const elBtnGoal    = $('#btn-goal');
+  const elGoalModal  = $('#goal-modal');
+  const elGoalClose  = $('#goal-modal-close');
+  const elGoalForm   = $('#goal-form');
+  const elGoalInput  = $('#goal-input');
 
   // Import modal
   const elModal       = $('#import-modal');
@@ -47,6 +62,7 @@
   // ─── DATA LAYER ───────────────────────────────────────
   let expenses = loadData();
   let pendingImport = [];
+  let monthlyGoal = loadGoal();
 
   function loadData() {
     try {
@@ -57,6 +73,15 @@
 
   function saveData() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses));
+  }
+
+  function loadGoal() {
+    const r = localStorage.getItem(GOAL_KEY);
+    return r ? parseFloat(r) : 0;
+  }
+
+  function saveGoal() {
+    localStorage.setItem(GOAL_KEY, monthlyGoal);
   }
 
   function addExpense(entry) {
@@ -131,6 +156,46 @@
     elValWeek.textContent  = formatCurrency(sumWeek);
     elValMonth.textContent = formatCurrency(sumMonth);
     elValTotal.textContent = expenses.length;
+    
+    updateGoalStatus(sumMonth);
+  }
+
+  function updateGoalStatus(sumMonth) {
+    if (!monthlyGoal || monthlyGoal <= 0) {
+      elValGoal.textContent = 'Not Set';
+      elGoalWrap.classList.add('hidden');
+      elGoalAlert.classList.add('hidden');
+      return;
+    }
+    elValGoal.textContent = formatCurrency(monthlyGoal);
+    elGoalWrap.classList.remove('hidden');
+
+    const pct = Math.min((sumMonth / monthlyGoal) * 100, 100);
+    elGoalBar.style.width = pct + '%';
+
+    // Status colors: <80% success, 80-99% warning, >=100% danger
+    let color = 'var(--success)';
+    if (pct >= 100) color = 'var(--danger)';
+    else if (pct >= 80) color = '#fbbf24'; // warning yellow
+    elGoalBar.style.background = color;
+
+    if (sumMonth >= monthlyGoal) {
+      elGoalAlert.classList.remove('hidden');
+      elGoalAlert.style.borderColor = 'var(--danger)';
+      elGoalAlert.style.background = 'rgba(239,68,68,.15)';
+      elGoalAlert.style.color = '#f87171';
+      elGoalAlertTitle.textContent = 'Budget Exceeded!';
+      elGoalAlertText.textContent = `You have exceeded your monthly goal of ${formatCurrency(monthlyGoal)} by ${formatCurrency(sumMonth - monthlyGoal)}.`;
+    } else if (sumMonth >= 0.8 * monthlyGoal) {
+      elGoalAlert.classList.remove('hidden');
+      elGoalAlert.style.borderColor = '#fbbf24';
+      elGoalAlert.style.background = 'rgba(251,191,36,.15)';
+      elGoalAlert.style.color = '#fcd34d';
+      elGoalAlertTitle.textContent = 'Budget Warning';
+      elGoalAlertText.textContent = `You have spent ${pct.toFixed(1)}% of your monthly goal. Approaching limit!`;
+    } else {
+      elGoalAlert.classList.add('hidden');
+    }
   }
 
   // ─── TRANSACTION LIST ─────────────────────────────────
@@ -250,14 +315,14 @@
       scales: {
         x: {
           grid: { color: 'rgba(255,255,255,.04)' },
-          ticks: { color: '#94a3b8', font: { family: 'Inter', size: 11 }, maxRotation: 45 },
+          ticks: { color: '#94a3b8', font: { family: 'Inter', size: 12 }, maxRotation: 45 },
         },
         y: {
           beginAtZero: true,
           grid: { color: 'rgba(255,255,255,.06)' },
           ticks: {
             color: '#94a3b8',
-            font: { family: 'Inter', size: 11 },
+            font: { family: 'Inter', size: 12 },
             callback: v => CURRENCY + v.toLocaleString('en-IN'),
           },
         },
@@ -296,7 +361,7 @@
         plugins: {
           legend: {
             position: 'bottom',
-            labels: { color: '#94a3b8', font: { family: 'Inter', size: 12 }, padding: 14, usePointStyle: true, pointStyleWidth: 10 },
+            labels: { color: '#94a3b8', font: { family: 'Inter', size: 13 }, padding: 14, usePointStyle: true, pointStyleWidth: 10 },
           },
           tooltip: {
             backgroundColor: 'rgba(22,27,45,.92)',
@@ -553,6 +618,24 @@
     elModal.classList.add('hidden');
   });
 
+  // ─── GOAL ─────────────────────────────────────────────
+  elBtnGoal.addEventListener('click', () => {
+    elGoalInput.value = monthlyGoal > 0 ? monthlyGoal : '';
+    elGoalModal.classList.remove('hidden');
+  });
+  elGoalClose.addEventListener('click', () => elGoalModal.classList.add('hidden'));
+  elGoalModal.addEventListener('click', (ev) => { if (ev.target === elGoalModal) elGoalModal.classList.add('hidden'); });
+
+  elGoalForm.addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const val = parseFloat(elGoalInput.value);
+    monthlyGoal = !isNaN(val) && val > 0 ? val : 0;
+    saveGoal();
+    updateStats(); // updates the goal UI
+    elGoalModal.classList.add('hidden');
+    toast(monthlyGoal > 0 ? 'Monthly goal updated' : 'Monthly goal removed');
+  });
+
   // ─── DEMO DATA ────────────────────────────────────────
   function generateDemoData() {
     const payees = [
@@ -670,6 +753,8 @@
 
   // ─── INIT ─────────────────────────────────────────────
   function init() {
+    expenses = generateDemoData();
+    saveData();
     buildCharts();
     updateStats();
     renderTransactions();

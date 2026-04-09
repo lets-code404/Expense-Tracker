@@ -4,7 +4,9 @@ handlers:
 - url: /
   static_files: index.html
   upload: index.html
+  expiration: "0s"
 
 - url: /(.*)
   static_files: \1
   upload: (.*)
+  expiration: "0s"
