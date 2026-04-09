@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ExpenseFlow — Smart Expense Tracker</title>
+  <meta name="description" content="Track your expenses intelligently with payment app integration, smart chatbox, and rich visualizations." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ─── HEADER ─── -->
+  <header id="main-header">
+    <div class="header-left">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      </div>
+      <h1>Expense<span class="accent">Flow</span></h1>
+    </div>
+    <div class="header-right">
+      <button id="btn-import" class="btn btn-glass" title="Import transactions">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Import
+      </button>
+      <button id="btn-demo" class="btn btn-accent" title="Load demo data">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Load Demo
+      </button>
+      <button id="btn-clear" class="btn btn-danger" title="Clear all data">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        Clear
+      </button>
+    </div>
+  </header>
+
+  <!-- ─── IMPORT MODAL ─── -->
+  <div id="import-modal" class="modal-overlay hidden">
+    <div class="modal glass-card">
+      <div class="modal-header">
+        <h2>Import Transactions</h2>
+        <button id="modal-close" class="btn-icon">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>Upload a <strong>CSV</strong> or <strong>JSON</strong> file exported from your payment app (GPay, PhonePe, Paytm, bank statement, etc.).</p>
+        <div class="file-drop-zone" id="file-drop-zone">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>
+          <span>Drag &amp; drop your file here or <label for="file-input" class="link">browse</label></span>
+          <input type="file" id="file-input" accept=".csv,.json" hidden />
+        </div>
+        <div id="import-preview" class="import-preview hidden"></div>
+        <div class="csv-help">
+          <strong>CSV format expected:</strong> <code>date, description, amount, payee</code><br />
+          <small>Date format: YYYY-MM-DD. Amount in numbers. Payee = recipient name/account.</small>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="btn-import-confirm" class="btn btn-accent" disabled>Import Data</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── MAIN DASHBOARD ─── -->
+  <main id="dashboard">
+
+    <!-- STATS ROW -->
+    <section class="stats-row">
+      <div class="stat-card glass-card" id="stat-today">
+        <div class="stat-icon today-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Today</span>
+          <span class="stat-value" id="val-today">₹0</span>
+        </div>
+      </div>
+      <div class="stat-card glass-card" id="stat-week">
+        <div class="stat-icon week-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">This Week</span>
+          <span class="stat-value" id="val-week">₹0</span>
+        </div>
+      </div>
+      <div class="stat-card glass-card" id="stat-month">
+        <div class="stat-icon month-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">This Month</span>
+          <span class="stat-value" id="val-month">₹0</span>
+        </div>
+      </div>
+      <div class="stat-card glass-card" id="stat-total">
+        <div class="stat-icon total-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Total Transactions</span>
+          <span class="stat-value" id="val-total">0</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- CHARTS ROW -->
+    <section class="charts-row">
+      <div class="chart-card glass-card">
+        <h3>Daily Spending — Last 7 Days</h3>
+        <div class="chart-wrap"><canvas id="chart-week"></canvas></div>
+      </div>
+      <div class="chart-card glass-card">
+        <h3>Daily Spending — Last 30 Days</h3>
+        <div class="chart-wrap"><canvas id="chart-month"></canvas></div>
+      </div>
+      <div class="chart-card glass-card pie-card">
+        <h3>Spending by Payee</h3>
+        <div class="chart-wrap pie-wrap"><canvas id="chart-pie"></canvas></div>
+      </div>
+    </section>
+
+    <!-- BOTTOM ROW: TRANSACTIONS + CHATBOX -->
+    <section class="bottom-row">
+
+      <!-- TRANSACTION LIST -->
+      <div class="transactions-panel glass-card">
+        <div class="panel-header">
+          <h3>Recent Transactions</h3>
+          <div class="filter-group">
+            <input type="text" id="search-txn" placeholder="Search..." class="input-glass" />
+          </div>
+        </div>
+        <div class="txn-list-wrap">
+          <table id="txn-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Payee</th>
+                <th class="col-amount">Amount</th>
+                <th class="col-action"></th>
+              </tr>
+            </thead>
+            <tbody id="txn-body">
+              <!-- populated by JS -->
+            </tbody>
+          </table>
+          <div id="txn-empty" class="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <p>No transactions yet.<br/>Load demo data or import a file to get started.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- CHATBOX -->
+      <div class="chatbox-panel glass-card">
+        <div class="panel-header">
+          <h3>💬 Quick Add — Cash Transactions</h3>
+        </div>
+        <div class="chat-messages" id="chat-messages">
+          <div class="chat-bubble bot">
+            <p>Hi! Tell me about your cash expenses and I'll log them for you. Try:</p>
+            <ul>
+              <li><em>"Paid 200 to tea shop"</em></li>
+              <li><em>"Lunch 350 at Dominos"</em></li>
+              <li><em>"Auto rickshaw 80"</em></li>
+              <li><em>"Groceries 1500 BigBazaar"</em></li>
+            </ul>
+          </div>
+        </div>
+        <form id="chat-form" class="chat-input-row" autocomplete="off">
+          <input type="text" id="chat-input" class="input-glass" placeholder="e.g. Paid 250 to chai wala..." />
+          <button type="submit" class="btn btn-accent btn-send" title="Send">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer id="main-footer">
+    <p>ExpenseFlow &copy; 2026 — Your expenses, visualized.</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
