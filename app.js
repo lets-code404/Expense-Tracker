@@ -606,11 +606,75 @@
     updateCharts();
   }
 
+  // ─── EFFECTS & PWA ────────────────────────────────────
+  function initEffects() {
+    // 1. Ripple Effect on Buttons
+    document.querySelectorAll('.btn, .nav-item').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        let ripple = document.createElement('span');
+        ripple.classList.add('ripple');
+        this.appendChild(ripple);
+        
+        let d = Math.max(this.clientWidth, this.clientHeight);
+        ripple.style.width = ripple.style.height = d + 'px';
+        
+        let rect = this.getBoundingClientRect();
+        ripple.style.left = e.clientX - rect.left - d/2 + 'px';
+        ripple.style.top = e.clientY - rect.top - d/2 + 'px';
+        
+        setTimeout(() => ripple.remove(), 600);
+      });
+    });
+
+    // 2. Vanilla 3D Tilt for Glass Cards (desktop only)
+    if (window.matchMedia("(min-width: 768px)").matches) {
+      document.querySelectorAll('.glass-card').forEach(card => {
+        card.addEventListener('mousemove', function(e) {
+          const rect = this.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+          const xc = rect.width / 2;
+          const yc = rect.height / 2;
+          const dx = x - xc;
+          const dy = y - yc;
+          // Calculate rotation
+          const tiltX = (dy / yc) * -4; // Max 4 deg
+          const tiltY = (dx / xc) * 4;
+          this.style.transform = `perspective(1000px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) translateY(-2px)`;
+        });
+        card.addEventListener('mouseleave', function() {
+          this.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg) translateY(0px)`;
+        });
+      });
+    }
+
+    // 3. Mobile Nav highlighting
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => {
+      item.addEventListener('click', () => {
+        navItems.forEach(n => n.classList.remove('active'));
+        item.classList.add('active');
+      });
+    });
+  }
+
+  function registerPWA() {
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('SW registered:', reg.scope))
+          .catch(err => console.log('SW registration failed:', err));
+      });
+    }
+  }
+
   // ─── INIT ─────────────────────────────────────────────
   function init() {
     buildCharts();
     updateStats();
     renderTransactions();
+    initEffects();
+    registerPWA();
   }
 
   // Wait for DOM + Chart.js
